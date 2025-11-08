@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../main.dart'; // для Route к Appointment, но мы будем использовать прямую навигацию
+import 'package:get_it/get_it.dart';
+import '../../shared/locator.dart';
 import '../models/service_item.dart';
 import 'service_detail_page.dart';
 
 class ServicesPage extends StatefulWidget {
   final void Function() onThemeToggle;
-  // параметр не нужен для A-версии, но оставим для совместимости
+
   final void Function(ServiceItem)? onNavigateToDetail;
 
   ServicesPage({required this.onThemeToggle, this.onNavigateToDetail});
@@ -40,7 +41,7 @@ class _ServicesPageState extends State<ServicesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userData = UserDataInherited.of(context);
+    final appState = GetIt.instance<AppState>();
 
     return Scaffold(
       appBar: AppBar(
@@ -66,7 +67,7 @@ class _ServicesPageState extends State<ServicesPage> {
         itemCount: _services.length,
         itemBuilder: (context, index) {
           final s = _services[index];
-          final isBooked = userData?.bookedServiceIds.contains(s.id) ?? false;
+          final isBooked = appState.bookedServiceIds.contains(s.id);
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -75,7 +76,7 @@ class _ServicesPageState extends State<ServicesPage> {
               subtitle: Text(s.description),
               trailing: isBooked ? Icon(Icons.check, color: Colors.green) : Icon(Icons.arrow_forward),
               onTap: () {
-                // Переход на детальную страницу услуги, где можно заполнить анкету
+                // Переход на детальную страницу услуги
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => ServiceDetailPage(service: s)),
                 );
@@ -86,7 +87,6 @@ class _ServicesPageState extends State<ServicesPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // можно открыть список анкеты
           Navigator.of(context).pushNamed('/appointments');
         },
         child: Icon(Icons.list),
