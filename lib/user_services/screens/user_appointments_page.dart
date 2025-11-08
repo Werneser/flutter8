@@ -1,45 +1,51 @@
 import 'package:flutter/material.dart';
-import '../../main.dart';
+import 'package:get_it/get_it.dart';
 import '../../services/models/service_item.dart';
+import '../../shared/locator.dart';
 
 class UserAppointmentsPage extends StatelessWidget {
-  final List<ServiceItem> _allServices = [
-    ServiceItem(
-      id: 'doctor_appointment',
-      title: 'Запись к врачу',
-      description: 'Выбор даты, времени приема и консультация врача.',
-    ),
-    ServiceItem(
-      id: 'driving_license',
-      title: 'Получение водительского удостоверения',
-      description: 'Запись на экзамен, сбор документов, расписание.',
-    ),
-    ServiceItem(
-      id: 'driver_education',
-      title: 'Обучение и сдача теории',
-      description: 'Онлайн-курсы, расписание занятий и экзамены.',
-    ),
-    ServiceItem(
-      id: 'passport_rights',
-      title: 'Получение паспорта/прав',
-      description: 'Пошаговая подача, необходимые документы.',
-    ),
-  ];
+  final AppState appState = GetIt.instance<AppState>();
+
+  UserAppointmentsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final bookedIds = UserDataInherited.of(context)?.bookedServiceIds ?? [];
-    final completed = UserDataInherited.of(context)?.completedRequests ?? [];
+    final bookedIds = appState.bookedServiceIds;
+    final completed = appState.completedRequests;
 
-    final bookedRequests = completed
+    final List<CompletedRequest> bookedRequests = completed
         .where((req) => bookedIds.contains(req.serviceId))
         .toList();
 
-    final displayRequests = bookedRequests.isNotEmpty
+    final List<CompletedRequest> displayRequests = bookedRequests.isNotEmpty
         ? bookedRequests
         : completed.isNotEmpty
         ? completed
         : <CompletedRequest>[];
+
+    // Список всех доступных услуг (можно вынести в модель/поставщик данных)
+    final List<ServiceItem> allServices = [
+      ServiceItem(
+        id: 'doctor_appointment',
+        title: 'Запись к врачу',
+        description: 'Выбор даты, времени приема и консультация врача.',
+      ),
+      ServiceItem(
+        id: 'driving_license',
+        title: 'Получение водительского удостоверения',
+        description: 'Запись на экзамен, сбор документов, расписание.',
+      ),
+      ServiceItem(
+        id: 'driver_education',
+        title: 'Обучение и сдача теории',
+        description: 'Онлайн-курсы, расписание занятий и экзамены.',
+      ),
+      ServiceItem(
+        id: 'passport_rights',
+        title: 'Получение паспорта/прав',
+        description: 'Пошаговая подача, необходимые документы.',
+      ),
+    ];
 
     return Scaffold(
       appBar: AppBar(title: Text('Мои записи')),
@@ -56,7 +62,7 @@ class UserAppointmentsPage extends StatelessWidget {
         itemCount: displayRequests.length,
         itemBuilder: (context, index) {
           final req = displayRequests[index];
-          final service = _allServices.firstWhere(
+          final service = allServices.firstWhere(
                 (s) => s.id == req.serviceId,
             orElse: () => ServiceItem(
               id: req.serviceId,
@@ -78,11 +84,12 @@ class UserAppointmentsPage extends StatelessWidget {
                       .first),
                   if (req.comment.isNotEmpty)
                     Text('Комментарий: ${req.comment}'),
-                  Text('Контакт: ${req.phone.isNotEmpty ? req.phone : 'не указан'} • email: ${req.email.isNotEmpty ? req.email : 'не указан'}'),
+                  Text(
+                    'Контакт: ${req.phone.isNotEmpty ? req.phone : 'не указан'} • email: ${req.email.isNotEmpty ? req.email : 'не указан'}',
+                  ),
                 ],
               ),
-              // Без навигации
-              onTap: null,
+              onTap: null, // без навигации внутри списка
             ),
           );
         },
