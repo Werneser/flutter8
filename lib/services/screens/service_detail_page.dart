@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../main.dart';
+import 'package:get_it/get_it.dart';
+import '../../shared/locator.dart';
 import '../models/service_item.dart';
 
 class ServiceDetailPage extends StatefulWidget {
@@ -30,10 +31,8 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
 
-      final inherited = UserDataInherited.of(context);
-      if (inherited != null) {
-        inherited.onNameChanged(_name);
-      }
+      final appState = GetIt.instance<AppState>();
+      appState.setName(_name);
 
       final now = DateTime.now();
       final req = CompletedRequest(
@@ -45,9 +44,8 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
         comment: _comment,
         dateSubmitted: now,
       );
-      if (inherited != null) {
-        inherited.onAddCompletedRequest(req);
-      }
+
+      appState.addCompletedRequest(req);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Заявка отправлена: $_name')),
@@ -59,7 +57,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final existingName = UserDataInherited.of(context)?.userName;
+    final existingName = GetIt.instance<AppState>().userName;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.service.title)),
@@ -105,7 +103,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
             ),
             const SizedBox(height: 20),
             if (existingName != null)
-              Text('Имя из InheritedWidget: $existingName', style: TextStyle(color: Colors.green[700])),
+              Text('Имя: $existingName', style: TextStyle(color: Colors.green[700])),
           ],
         ),
       ),
