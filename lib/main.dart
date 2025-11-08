@@ -1,63 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter8/user_services/screens/user_appointments_page.dart';
+import 'package:flutter8/shared/locator.dart';
+import 'package:get_it/get_it.dart';
 import 'shared/app_theme.dart';
 import 'services/screens/services_page.dart';
-
-void main() {
+import 'user_services/screens/user_appointments_page.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await setupLocator();
   runApp(MyApp());
-}
-
-class CompletedRequest {
-  final String id;
-  final String serviceId;
-  final String name;
-  final String phone;
-  final String email;
-  final String comment;
-  final DateTime dateSubmitted;
-
-  CompletedRequest({
-    required this.id,
-    required this.serviceId,
-    required this.name,
-    required this.phone,
-    required this.email,
-    required this.comment,
-    required this.dateSubmitted,
-  });
-}
-
-class UserDataInherited extends InheritedWidget {
-  final String? userName;
-  final List<String> bookedServiceIds;
-  final List<CompletedRequest> completedRequests;
-  final void Function(String) onNameChanged;
-  final void Function(String) onBookService;
-  final void Function(List<String>) onSetAppointments;
-  final void Function(CompletedRequest) onAddCompletedRequest;
-
-  const UserDataInherited({
-    Key? key,
-    required this.userName,
-    required this.bookedServiceIds,
-    required this.completedRequests,
-    required this.onNameChanged,
-    required this.onBookService,
-    required this.onSetAppointments,
-    required this.onAddCompletedRequest,
-    required Widget child,
-  }) : super(key: key, child: child);
-
-  static UserDataInherited? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<UserDataInherited>();
-  }
-
-  @override
-  bool updateShouldNotify(UserDataInherited oldWidget) {
-    return oldWidget.userName != userName ||
-        oldWidget.bookedServiceIds != bookedServiceIds ||
-        oldWidget.completedRequests != completedRequests;
-  }
 }
 
 class MyApp extends StatefulWidget {
@@ -66,60 +16,45 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _dark = false;
-  String? _userName;
-  List<String> _bookedServiceIds = [];
-  List<CompletedRequest> _completedRequests = [];
+  late AppState appState;
+  late VoidCallback _listener;
 
-  void _setName(String name) {
-    setState(() => _userName = name);
+  @override
+  void initState() {
+    super.initState();
+    appState = GetIt.instance<AppState>();
+    _listener = () => setState(() {});
+    appState.addListener(_listener);
   }
 
-  void _toggleTheme() {
-    setState(() => _dark = !_dark);
-  }
-
-  void _bookService(String serviceId) {
-    setState(() {
-      if (!_bookedServiceIds.contains(serviceId)) {
-        _bookedServiceIds.add(serviceId);
-      }
-    });
-  }
-
-  void _setAppointments(List<String> ids) {
-    setState(() => _bookedServiceIds = List.from(ids));
-  }
-
-  void _addCompletedRequest(CompletedRequest req) {
-    setState(() => _completedRequests.add(req));
+  @override
+  void dispose() {
+    appState.removeListener(_listener);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return UserDataInherited(
-      userName: _userName,
-      bookedServiceIds: _bookedServiceIds,
-      completedRequests: _completedRequests,
-      onNameChanged: _setName,
-      onBookService: _bookService,
-      onSetAppointments: _setAppointments,
-      onAddCompletedRequest: _addCompletedRequest,
-      child: MaterialApp(
-        title: 'Госуслуги Flutter Demo',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
-        home: ServicesPage(
-          onNavigateToDetail: (service) {
-            // деталь будет открываться внутри ServicesPage
+    // Используем AnimatedBuilder для автоматического перерисования при изменениях AppState
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Госуслуги Flutter Demo',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: appState.isDark ? ThemeMode.dark : ThemeMode.light,
+          home: ServicesPage(
+            onNavigateToDetail: (service) {
+              // деталь будет открываться внутри ServicesPage
+            },
+            onThemeToggle: appState.toggleTheme,
+          ),
+          routes: {
+            '/appointments': (_) => UserAppointmentsPage(),
           },
-          onThemeToggle: _toggleTheme,
-        ),
-        routes: {
-          '/appointments': (_) => UserAppointmentsPage(),
-        },
-      ),
+        );
+      },
     );
   }
 }
