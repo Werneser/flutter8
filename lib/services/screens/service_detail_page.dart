@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+
 import '../../shared/locator.dart';
 import '../models/service_item.dart';
+import '../../shared/stores/app_state.dart';
 
 class ServiceDetailPage extends StatefulWidget {
   final ServiceItem service;
-
   ServiceDetailPage({required this.service});
 
   @override
@@ -20,6 +22,14 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
   String _comment = '';
 
   final TextEditingController _nameController = TextEditingController();
+  final AppState appState = GetIt.instance<AppState>();
+
+  @override
+  void initState() {
+    super.initState();
+    final existingName = appState.userName;
+    if (existingName != null) _nameController.text = existingName;
+  }
 
   @override
   void dispose() {
@@ -30,10 +40,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
   void _saveForm() {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
-
-      final appState = GetIt.instance<AppState>();
       appState.setName(_name);
-
       final now = DateTime.now();
       final req = CompletedRequest(
         id: '${widget.service.id}_${now.millisecondsSinceEpoch}',
@@ -44,7 +51,6 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
         comment: _comment,
         dateSubmitted: now,
       );
-
       appState.addCompletedRequest(req);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,8 +63,7 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final existingName = GetIt.instance<AppState>().userName;
-
+    // подписки на appState.userName через Observer
     return Scaffold(
       appBar: AppBar(title: Text(widget.service.title)),
       body: Padding(
@@ -102,8 +107,16 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
               ),
             ),
             const SizedBox(height: 20),
-            if (existingName != null)
-              Text('Имя: $existingName', style: TextStyle(color: Colors.green[700])),
+            Observer(
+              builder: (_) {
+                final existingName = appState.userName;
+                if (existingName != null) {
+                  return Text('Имя: $existingName', style: TextStyle(color: Colors.green[700]));
+                } else {
+                  return SizedBox.shrink();
+                }
+              },
+            ),
           ],
         ),
       ),
