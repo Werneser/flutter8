@@ -13,7 +13,6 @@ class UserAppointmentsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Список всех доступных услуг (можно вынести в модель/поставщик данных)
     final List<ServiceItem> allServices = [
       ServiceItem(
         id: 'doctor_appointment',
