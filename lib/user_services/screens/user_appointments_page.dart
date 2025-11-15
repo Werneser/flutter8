@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+
 import '../../services/models/service_item.dart';
 import '../../shared/locator.dart';
+import '../../shared/stores/app_state.dart';
 
 class UserAppointmentsPage extends StatelessWidget {
   final AppState appState = GetIt.instance<AppState>();
@@ -10,19 +13,6 @@ class UserAppointmentsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bookedIds = appState.bookedServiceIds;
-    final completed = appState.completedRequests;
-
-    final List<CompletedRequest> bookedRequests = completed
-        .where((req) => bookedIds.contains(req.serviceId))
-        .toList();
-
-    final List<CompletedRequest> displayRequests = bookedRequests.isNotEmpty
-        ? bookedRequests
-        : completed.isNotEmpty
-        ? completed
-        : <CompletedRequest>[];
-
     // Список всех доступных услуг (можно вынести в модель/поставщик данных)
     final List<ServiceItem> allServices = [
       ServiceItem(
@@ -49,48 +39,64 @@ class UserAppointmentsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text('Мои записи')),
-      body: displayRequests.isEmpty
-          ? Center(
-        child: Text(
-          'У вас нет заполненных заявок для отображения.',
-          style: TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: displayRequests.length,
-        itemBuilder: (context, index) {
-          final req = displayRequests[index];
-          final service = allServices.firstWhere(
-                (s) => s.id == req.serviceId,
-            orElse: () => ServiceItem(
-              id: req.serviceId,
-              title: 'Неизвестная услуга',
-              description: '',
-            ),
-          );
+      body: Observer(
+        builder: (_) {
+          final bookedIds = appState.bookedServiceIds.toList();
+          final completed = appState.completedRequests.toList();
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              title: Text(service.title),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Заявка от: ${req.name}'),
-                  Text('Дата подачи: ${req.dateSubmitted.toLocal()}'
-                      .split('.')
-                      .first),
-                  if (req.comment.isNotEmpty)
-                    Text('Комментарий: ${req.comment}'),
-                  Text(
-                    'Контакт: ${req.phone.isNotEmpty ? req.phone : 'не указан'} • email: ${req.email.isNotEmpty ? req.email : 'не указан'}',
-                  ),
-                ],
+          final List<CompletedRequest> bookedRequests = completed
+              .where((req) => bookedIds.contains(req.serviceId))
+              .toList();
+
+          final List<CompletedRequest> displayRequests = bookedRequests.isNotEmpty
+              ? bookedRequests
+              : completed.isNotEmpty
+              ? completed
+              : <CompletedRequest>[];
+
+          if (displayRequests.isEmpty) {
+            return Center(
+              child: Text(
+                'У вас нет заполненных заявок для отображения.',
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
               ),
-              onTap: null, // без навигации внутри списка
-            ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: displayRequests.length,
+            itemBuilder: (context, index) {
+              final req = displayRequests[index];
+              final service = allServices.firstWhere(
+                    (s) => s.id == req.serviceId,
+                orElse: () => ServiceItem(
+                  id: req.serviceId,
+                  title: 'Неизвестная услуга',
+                  description: '',
+                ),
+              );
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  title: Text(service.title),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Заявка от: ${req.name}'),
+                      Text('Дата подачи: ${req.dateSubmitted.toLocal()}'.split('.').first),
+                      if (req.comment.isNotEmpty) Text('Комментарий: ${req.comment}'),
+                      Text(
+                        'Контакт: ${req.phone.isNotEmpty ? req.phone : 'не указан'} • email: ${req.email.isNotEmpty ? req.email : 'не указан'}',
+                      ),
+                    ],
+                  ),
+                  onTap: null,
+                ),
+              );
+            },
           );
         },
       ),
