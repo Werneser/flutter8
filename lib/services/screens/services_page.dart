@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import '../../shared/locator.dart';
+import '../../shared/stores/app_state.dart';
 import '../models/service_item.dart';
 import 'service_detail_page.dart';
 
